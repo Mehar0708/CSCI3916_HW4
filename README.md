@@ -8,6 +8,8 @@
 - **Render Deployment:** [https://csci3916-hw4-aqr1.onrender.com](https://csci3916-hw4-aqr1.onrender.com)
 - **Postman Collection:** `__postman/__`
 
+The Extra credit google analytics report has been added as a pdf [Extra credit event report](Events_Event_name.pdf)
+
 ---
 
 ## Project
