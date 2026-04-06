@@ -1,0 +1,312 @@
+{
+  "info": {
+    "_postman_id": "ce758d23-db87-4311-8de4-19e8d75038c1",
+    "name": "CSC3916_HW4",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51992196",
+    "_collection_link": "https://go.postman.co/collection/51992196-ce758d23-db87-4311-8de4-19e8d75038c1?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "1 - Sign Up",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "var username = 'testuser_' + Date.now();\r",
+              "pm.collectionVariables.set('dynamic_username', username);\r",
+              "console.log('Generated username:', username);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Sign up successful', function () {\r",
+              "  pm.expect(pm.response.code).to.equal(201);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User\",\n  \"username\": \"{{dynamic_username}}\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/signup",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "signup"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2 - Sign In",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.token) {",
+              "  pm.collectionVariables.set('jwt_token', json.token);",
+              "  console.log('JWT token saved successfully');",
+              "} else {",
+              "  console.log('No token found in response:', JSON.stringify(json));",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser_hw4_2026\",\n  \"password\": \"securepass99\"\n}"
+        },
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/signin",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "signin"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3 - Get All Movies (find a valid movieId)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "if (json.movies && json.movies.length > 0) {",
+              "  pm.collectionVariables.set('movie_id', json.movies[0]._id);",
+              "  pm.collectionVariables.set('movie_title', json.movies[0].title);",
+              "  console.log('Saved movieId:', json.movies[0]._id);",
+              "  console.log('Saved title:', json.movies[0].title);",
+              "} else {",
+              "  console.log('No movies found!');",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/movies",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "movies"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4 - Valid Save Review",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{jwt_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"movieId\": \"{{movie_id}}\",\n  \"username\": \"testuser_hw4_2026\",\n  \"review\": \"Absolutely brilliant film, a must watch!\",\n  \"rating\": 5\n}"
+        },
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/reviews",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "reviews"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5 - Valid Movie With Reviews",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/movies/The Departed?reviews=true",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "movies",
+            "The Departed"
+          ],
+          "query": [
+            {
+              "key": "reviews",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6 - Invalid Movie (Does Not Exist)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "{{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/movies/ThisMovieDoesNotExist2026",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "movies",
+            "ThisMovieDoesNotExist2026"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7 - Invalid Save Review (Bad MovieId)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{jwt_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"movieId\": \"000000000000000000000000\",\n  \"username\": \"testuser_hw4_2026\",\n  \"review\": \"This movie does not exist in the database\",\n  \"rating\": 2\n}"
+        },
+        "url": {
+          "raw": "https://csci3916-hw4-aqr1.onrender.com/reviews",
+          "protocol": "https",
+          "host": [
+            "csci3916-hw4-aqr1",
+            "onrender",
+            "com"
+          ],
+          "path": [
+            "reviews"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "https://csci3916-hw4-aqr1.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "movie_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "movie_title",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dynamic_username",
+      "value": ""
+    }
+  ]
+}
