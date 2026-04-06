@@ -1,4 +1,13 @@
 require('dotenv').config();
+
+const mongoose = require('mongoose');
+
+mongoose.connect(process.env.DB)
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const passport = require('passport');
