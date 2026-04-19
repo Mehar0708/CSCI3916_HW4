@@ -71,13 +71,17 @@
           "listen": "test",
           "script": {
             "exec": [
-              "var json = pm.response.json();",
-              "if (json.token) {",
-              "  pm.collectionVariables.set('jwt_token', json.token);",
-              "  console.log('JWT token saved successfully');",
-              "} else {",
-              "  console.log('No token found in response:', JSON.stringify(json));",
-              "}"
+              "var jsonData = pm.response.json();",
+              "if (jsonData.token) {",
+              "  pm.environment.set('jwt_token', jsonData.token);",
+              "  console.log('Token saved to environment:', jsonData.token);",
+              "}",
+              "",
+              "pm.test('Sign in successful', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(jsonData.token).to.exist;",
+              "});"
             ],
             "type": "text/javascript",
             "packages": {},
@@ -127,7 +131,23 @@
               "  console.log('Saved title:', json.movies[0].title);",
               "} else {",
               "  console.log('No movies found!');",
-              "}"
+              "}",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.movies && jsonData.movies.length > 0) {",
+              "  pm.collectionVariables.set('movie_title', jsonData.movies[0].title);",
+              "  pm.collectionVariables.set('movie_id', jsonData.movies[0]._id);",
+              "  console.log('Movie title saved:', jsonData.movies[0].title);",
+              "  console.log('Movie ID saved:', jsonData.movies[0]._id);",
+              "}",
+              "",
+              "pm.test('Get all movies successful', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(pm.response.code).to.equal(200);",
+              "  pm.expect(jsonData.movies).to.be.an('array');",
+              "  pm.expect(jsonData.movies.length).to.be.above(0);",
+              "});",
+              "",
+              ""
             ],
             "type": "text/javascript",
             "packages": {},
@@ -160,6 +180,23 @@
     },
     {
       "name": "4 - Valid Save Review",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Review created successfully', function () {\r",
+              "  var jsonData = pm.response.json();\r",
+              "  pm.expect(pm.response.code).to.equal(201);\r",
+              "  pm.expect(jsonData.message).to.equal('Review created!');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -193,6 +230,24 @@
     },
     {
       "name": "5 - Valid Movie With Reviews",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Returns movie with reviews array', function () {\r",
+              "  var jsonData = pm.response.json();\r",
+              "  pm.expect(pm.response.code).to.equal(200);\r",
+              "  pm.expect(jsonData.movie).to.have.property('reviews');\r",
+              "  pm.expect(jsonData.movie.reviews).to.be.an('array');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [
@@ -225,6 +280,21 @@
     },
     {
       "name": "6 - Invalid Movie (Does Not Exist)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Invalid movie returns 404', function () {\r",
+              "  pm.expect(pm.response.code).to.equal(404);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [
@@ -251,6 +321,21 @@
     },
     {
       "name": "7 - Invalid Save Review (Bad MovieId)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Invalid review returns 404', function () {\r",
+              "  pm.expect(pm.response.code).to.equal(404);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -283,26 +368,42 @@
       "response": []
     }
   ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
   "variable": [
     {
       "key": "url",
-      "value": "https://csci3916-hw4-aqr1.onrender.com",
-      "type": "string"
-    },
-    {
-      "key": "jwt_token",
-      "value": "",
-      "type": "string"
+      "value": "https://csci3916-hw4-aqr1.onrender.com"
     },
     {
       "key": "movie_id",
-      "value": "",
-      "type": "string"
+      "value": ""
     },
     {
       "key": "movie_title",
-      "value": "",
-      "type": "string"
+      "value": ""
     },
     {
       "key": "dynamic_username",
