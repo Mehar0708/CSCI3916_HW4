@@ -6,8 +6,6 @@ mongoose.connect(process.env.DB)
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const passport = require('passport');
@@ -16,7 +14,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const User = require('./Users');
 const Movie = require('./Movies');
-const Review = require('./Reviews'); 
+const Review = require('./Reviews');
 const rp = require('request-promise');
 const crypto = require('crypto');
 
@@ -41,12 +39,12 @@ function trackDimension(category, action, label, value, dimension, metric) {
       events: [{
         name: 'movie_review',
         params: {
-          event_category: category,   // Genre of movie (e.g. Western)
-          event_action: action,       // URL path (e.g. post /reviews)
-          event_label: label,         // API Request for Movie Review
-          value: value,               // 1
-          cd1: dimension,             // Custom Dimension: Movie Name
-          cm1: metric                 // Custom Metric: 1
+          event_category: category,
+          event_action: action,
+          event_label: label,
+          value: value,
+          cd1: dimension,
+          cm1: metric
         }
       }]
     }),
@@ -58,6 +56,7 @@ function trackDimension(category, action, label, value, dimension, metric) {
   return rp(options);
 }
 
+// SIGNUP
 router.post('/signup', async (req, res) => {
   if (!req.body.username || !req.body.password) {
     return res.status(400).json({ success: false, msg: 'Please include both username and password to signup.' });
@@ -108,6 +107,28 @@ router.post('/signin', function(req, res) {
 router.route('/movies')
   .get(authJwtController.isAuthenticated, async (req, res) => {
     try {
+      if (req.query.reviews === 'true') {
+        const docs = await Movie.aggregate([
+          {
+            $lookup: {
+              from: 'reviews',
+              localField: '_id',
+              foreignField: 'movieId',
+              as: 'movieReviews'
+            }
+          },
+          {
+            $addFields: {
+              avgRating: { $avg: '$movieReviews.rating' }
+            }
+          },
+          {
+            $sort: { avgRating: -1 }
+          }
+        ]).exec();
+        return res.status(200).json({ success: true, movies: docs });
+      }
+
       const movies = await Movie.find();
       res.status(200).json({ success: true, movies });
     } catch (err) {
@@ -138,6 +159,44 @@ router.route('/movies')
     res.status(405).json({ success: false, message: 'DELETE not supported on /movies. Use /movies/:title instead.' });
   });
 
+// SEARCH ROUTE (Extra Credit) — must be above /movies/:title
+router.route('/search')
+  .post(authJwtController.isAuthenticated, async (req, res) => {
+    try {
+      const { title, actorName } = req.body;
+
+      if (!title && !actorName) {
+        return res.status(400).json({ success: false, message: 'Provide title or actorName to search.' });
+      }
+
+      const matchStage = {};
+      if (title) matchStage.title = { $regex: title, $options: 'i' };
+      if (actorName) matchStage['actors.actorName'] = { $regex: actorName, $options: 'i' };
+
+      const results = await Movie.aggregate([
+        { $match: matchStage },
+        {
+          $lookup: {
+            from: 'reviews',
+            localField: '_id',
+            foreignField: 'movieId',
+            as: 'movieReviews'
+          }
+        },
+        {
+          $addFields: {
+            avgRating: { $avg: '$movieReviews.rating' }
+          }
+        },
+        { $sort: { avgRating: -1 } }
+      ]);
+
+      res.status(200).json({ success: true, movies: results });
+    } catch (err) {
+      res.status(500).json({ success: false, message: 'Error during search.' });
+    }
+  });
+
 // GET MOVIE BY TITLE — with optional ?reviews=true
 router.route('/movies/:title')
   .get(authJwtController.isAuthenticated, async (req, res) => {
@@ -150,7 +209,12 @@ router.route('/movies/:title')
               from: 'reviews',
               localField: '_id',
               foreignField: 'movieId',
-              as: 'reviews'
+              as: 'movieReviews'
+            }
+          },
+          {
+            $addFields: {
+              avgRating: { $avg: '$movieReviews.rating' }
             }
           }
         ]);
@@ -162,7 +226,6 @@ router.route('/movies/:title')
         return res.status(200).json({ success: true, movie: result[0] });
       }
 
-      // No reviews param
       const movie = await Movie.findOne({ title: req.params.title });
       if (!movie) return res.status(404).json({ success: false, message: 'Movie not found.' });
       res.status(200).json({ success: true, movie });
@@ -206,14 +269,16 @@ router.route('/reviews')
     }
   })
   .post(authJwtController.isAuthenticated, async (req, res) => {
-    const { movieId, username, review, rating } = req.body;
+    const { movieId, review, rating } = req.body;
 
-    if (!movieId || !username || !review || rating === undefined) {
-      return res.status(400).json({ success: false, message: 'Please include movieId, username, review, and rating.' });
+    // Pull username from the JWT token instead of request body
+    const username = req.user.username;
+
+    if (!movieId || !review || rating === undefined) {
+      return res.status(400).json({ success: false, message: 'Please include movieId, review, and rating.' });
     }
 
     try {
-      // Verify the movie exists before saving the review
       const movie = await Movie.findById(movieId);
       if (!movie) {
         return res.status(404).json({ success: false, message: 'Movie not found.' });
@@ -222,14 +287,13 @@ router.route('/reviews')
       const newReview = new Review({ movieId, username, review, rating });
       await newReview.save();
 
-      // Fire GA analytics event — fire-and-forget so GA failure won't break the API
       trackDimension(
-        movie.genre,                    // Event Category: genre of movie
-        'post /reviews',                // Event Action: URL path
-        'API Request for Movie Review', // Event Label
-        '1',                            // Event Value
-        movie.title,                    // Custom Dimension: movie name
-        '1'                             // Custom Metric: 1
+        movie.genre,
+        'post /reviews',
+        'API Request for Movie Review',
+        '1',
+        movie.title,
+        '1'
       ).catch(err => console.error('GA tracking error:', err));
 
       res.status(201).json({ message: 'Review created!' });
@@ -264,4 +328,4 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-module.exports = app; // for testing only
+module.exports = app;
