@@ -2,6 +2,11 @@
 ### Movies & Reviews API
 
 ---
+# Assignment-4 Updated: HW-5 Render Link
+
+Render Link for Hw-5: https://csci3916-hw4-aqr1.onrender.com
+
+Render Link for React Page: https://csc3916-react19-rfg5.onrender.com
 
 ## Quick Links
 
